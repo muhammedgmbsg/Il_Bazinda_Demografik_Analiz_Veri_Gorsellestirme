@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clickable Map</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <style>
+
+        #map {
+            height: 700px;
+        }
+        .dropdown-container select {
+            padding: 8px;
+            font-size: 16px;
+            background-color: #fff;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+        .dropdown-container select:hover {
+            background-color: #f9f9f9;
+        }
+
+        .radio-container input[type="radio"] {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body style="display: flex;flex-direction: column;align-items: center">
+<div style="margin-bottom: 1rem;display: flex;justify-content: center;align-items: center;flex-direction: column">
+        <div class="dropdown-container" style="margin-bottom: 1rem">
+        <select id="categoryDropdown">
+            <option value="literacyRate">Okur-yazar Oranı</option>
+            <option value="migrationRate">Net Göç Oranı</option>
+
+            <option value="marriageRate">Evlilik Sayısı</option>
+        </select>
+    </div>
+    <div class="radio-container">
+        <input type="radio" name="mode" id="highest" value="highest" checked>
+        <label for="highest">En Yüksek</label>
+        <input type="radio" name="mode" id="lowest" value="lowest">
+        <label for="lowest">En Düşük</label>
+    </div>
+    </div>
+    <div id="map" style="border-radius: 1rem;width: 90%;height: 80vh"></div>
+    <script>
+        var southWest = L.latLng(35, 25);
+        var northEast = L.latLng(42, 45);
+        var bounds = L.latLngBounds(southWest, northEast);
+
+        var map = L.map('map', {
+            maxBounds: bounds,
+            maxBoundsViscosity: 1.0
+        }).setView([39, 35], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var cities = {{ city_geojson | safe }};
+
+        L.geoJSON(cities, {
+            onEachFeature: function (feature, layer) {
+                var popupContent = "<b>" + feature.properties.name + "</b><br>" +
+                                   "Okur-yazar Oranı: %" + feature.properties.literacyRate + "<br>" +
+                                   "Net Göç Oranı: %" + feature.properties.migrationRate + "<br>" +
+                                   "Gençlik Oranı: %" + feature.properties.youthRate + "<br>" +
+                                   "Yaşlılık Oranı: %" + feature.properties.elderlyRate + "<br>" +
+                                   "Evlilik Sayısı: " + feature.properties.marriageRate;
+
+                layer.bindPopup(popupContent);
+            }
+        }).addTo(map);
+
+        function getTopCities(data, key, count, mode) {
+            var sortedData = data.features.sort((a, b) => {
+                if (mode === 'highest') {
+                    return b.properties[key] - a.properties[key];
+                } else {
+                    return a.properties[key] - b.properties[key];
+                }
+            });
+            return sortedData.slice(0, count);
+        }
+
+        function drawLines(topCities, color) {
+            var latlngs = topCities.map(city => {
+                var coordinates = city.geometry.coordinates;
+                return [coordinates[1], coordinates[0]]; // [latitude, longitude]
+            });
+            return L.polyline(latlngs, { color: color });
+        }
+
+        var categories = [
+            { key: 'literacyRate', color: 'red' },
+            { key: 'migrationRate', color: 'blue' },
+            { key: 'youthRate', color: 'green' },
+            { key: 'elderlyRate', color: 'orange' },
+            { key: 'marriageRate', color: 'purple' }
+        ];
+
+        var layers = {};
+        var lowestLayers = {}; // En düşük verilere sahip şehirler için katmanlar
+
+        var mode = document.querySelector('input[name="mode"]:checked').value;
+        categories.forEach(category => {
+            var topCities = getTopCities(cities, category.key, 5, mode);
+            var lowestTopCities = getTopCities(cities, category.key, 5, 'lowest'); // En düşük verilere sahip şehirleri al
+            var layerGroup = L.layerGroup();
+            layerGroup.addLayer(drawLines(topCities, category.color));
+            layers[category.key] = layerGroup;
+
+            var lowestLayerGroup = L.layerGroup();
+            lowestLayerGroup.addLayer(drawLines(lowestTopCities, category.color));
+            lowestLayers[category.key] = lowestLayerGroup;
+        });
+
+        function updateLines() {
+    var selectedCategory = document.getElementById('categoryDropdown').value;
+    var mode = document.querySelector('input[name="mode"]:checked').value;
+    if (mode === 'highest') {
+        for (var key in layers) {
+            if (key === selectedCategory) {
+                map.addLayer(layers[key]);
+            } else {
+                map.removeLayer(layers[key]);
+            }
+            map.removeLayer(lowestLayers[key]); // En düşük katmanları kaldır
+        }
+    } else {
+        for (var key in lowestLayers) {
+            if (key === selectedCategory) {
+                map.addLayer(lowestLayers[key]); // En düşük katmanları ekle
+                var lowestCities = getTopCities(cities, selectedCategory, 5, 'lowest'); // En düşük verilere sahip şehirleri al
+                console.log(`En düşük ${selectedCategory} oranına sahip şehirler:`, lowestCities);
+            } else {
+                map.removeLayer(lowestLayers[key]);
+            }
+            map.removeLayer(layers[key]); // En yüksek katmanları kaldır
+        }
+    }
+}
+        var categoryDropdown = document.getElementById('categoryDropdown');
+        categoryDropdown.addEventListener('change', updateLines);
+
+        var radioButtons = document.querySelectorAll('input[name="mode"]');
+        radioButtons.forEach(function(button) {
+            button.addEventListener('change', updateLines);
+        });
+
+        map.on('drag', function () {
+            map.panInsideBounds(bounds, { animate: false });
+        });
+
+        map.on('dragend', function () {
+            var center = map.getCenter();
+            if (!bounds.contains(center)) {
+                map.panInsideBounds(bounds);
+            }
+        });
+    </script>
+</body>
+</html>
+
