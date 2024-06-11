@@ -1,6 +1,9 @@
 # İl Bazında Demografik Analiz
 ## Porje il bazındaki demografik verilerin ve demografik ilişkilerin görselleştirilmesini kapsamaktadır.
-**Project Purpose:** Proje Türkiye’de bulunan şehirlerin demografik analizinin Türkiye İstatistik Kurumun’dan alınan veriler yardımıyla görselleştirilerek kullanıcılara sunmayı amaçlamaktadır.
+
+**Proje Amacı:** Bu proje demografik verilerin görselleştirilmesi amacıyla interaktif bir harita geliştirilmesini hedeflemektedir. Kullanıcıların şehirler arasındaki demografik farklılıkları kolayca analiz edebilmelerini sağlamak amacıyla Leaflet kütüphanesi kullanılarak oluşturulan harita, şehirlerin okur-yazar oranı, net göç oranı ve evlilik sayısı gençlik ve yaşlılık oranı gibi önemli demografik göstergeleri içermektedir.
+
+**Proje Sonuçları:**Belirli demografik kriterlere göre şehirler filtrelenebilmiş ve en yüksek ve en düşük değerlere sahip şehirler gösterilmiştir. Harita üzerinde gösterilen en yüksek ve en düşük değerlere sahip şehirler arasındaki bağlantılar, demografik trendleri ve farklılıkların daha iyi anlaşılmasına yardımcı olmuştur.  
 **Proje Görselleri:**
 
 <img width="1346" alt="Ekran Resmi 2024-06-11 10 30 44" src="https://github.com/muhammedgmbsg/Il_Bazinda_Demografik_Analiz_Veri_Gorsellestirme/assets/95706061/14a6bd1d-94d6-4937-8574-d1ab9d0817ec">
